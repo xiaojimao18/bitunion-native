@@ -1,0 +1,12 @@
+<resources>
+
+    <!-- Strings related to login -->
+    <string name="prompt_email">用户名</string>
+    <string name="prompt_password">密码</string>
+    <string name="action_sign_in">登录</string>
+    <string name="action_sign_in_short">登录</string>
+
+    <string name="error_network">网络状态不佳</string>
+    <string name="error_incorrect_login">用户名或密码不正确</string>
+    <string name="error_field_required">此项必填</string>
+</resources>
