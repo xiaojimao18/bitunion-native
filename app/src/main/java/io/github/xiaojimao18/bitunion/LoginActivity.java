@@ -19,8 +19,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.json.JSONObject;
-
 import io.github.xiaojimao18.bitunion.api.LoginAPI;
 import io.github.xiaojimao18.bitunion.utils.SharedConfig;
 
@@ -135,7 +133,7 @@ public class LoginActivity extends Activity {
     /**
      * 登录Task
      */
-    public class UserLoginTask extends AsyncTask<Void, Void, JSONObject> {
+    public class UserLoginTask extends AsyncTask<Void, Void, String> {
         private final String mUsername;
         private final String mPassword;
 
@@ -145,24 +143,23 @@ public class LoginActivity extends Activity {
         }
 
         @Override
-        protected JSONObject doInBackground(Void... params) {
+        protected String doInBackground(Void... params) {
             return LoginAPI.getInstance().login(mUsername, mPassword);
         }
 
         @Override
-        protected void onPostExecute(final JSONObject result) {
+        protected void onPostExecute(final String session) {
             mAuthTask = null;
             showProgress(false);
             try {
-                if (result == null) {
+                if (session == null) {
                     Toast.makeText(getApplicationContext(), getString(R.string.error_network), Toast.LENGTH_SHORT).show();
-                } else if (result.getString("result").equals("fail")) {
+                } else if (session.equals("")) {
                     Toast.makeText(getApplicationContext(), getString(R.string.error_incorrect_login), Toast.LENGTH_SHORT).show();
-                    Log.d("UserLoginTask:onPostExecute", result.toString());
                 } else {
                     SharedConfig.getInstance().setConfig(getApplicationContext(), "username", mUsername);
                     SharedConfig.getInstance().setConfig(getApplicationContext(), "password", mPassword);
-                    SharedConfig.getInstance().setConfig(getApplicationContext(), "session", result.getString("session"));
+                    SharedConfig.getInstance().setConfig(getApplicationContext(), "session", session);
 
                     Intent intent = new Intent();
                     intent.setClass(LoginActivity.this, ThreadActivity.class);

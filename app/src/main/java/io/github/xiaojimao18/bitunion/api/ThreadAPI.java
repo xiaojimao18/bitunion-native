@@ -5,6 +5,8 @@ import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -37,7 +39,7 @@ public class ThreadAPI {
                 int end = start + 20 < to ? start + 20 : to;
                 JSONObject params = new JSONObject();
                 params.put("action", "thread");
-                params.put("username", username);
+                params.put("username", URLEncoder.encode(username, "UTF-8"));
                 params.put("session", session);
                 params.put("fid", fid);
                 params.put("from", String.valueOf(start));
@@ -47,28 +49,28 @@ public class ThreadAPI {
                 if (response == null) {
                     return null;
                 }else if (response.getString("result").equals("success")) {
-                        JSONArray threadList = response.getJSONArray("threadlist");
-                        for (int i = 0; i < threadList.length(); i ++) {
-                            JSONObject obj = threadList.getJSONObject(i);
+                    JSONArray threadList = response.getJSONArray("threadlist");
+                    for (int i = 0; i < threadList.length(); i ++) {
+                        JSONObject obj = threadList.getJSONObject(i);
 
-                            Thread thread = new Thread();
-                            thread.tid = obj.getString("tid");
-                            thread.author = obj.getString("author");
-                            thread.authorid = obj.getString("authorid");
-                            thread.subject = obj.getString("subject");
-                            thread.dateline = dateFormat.format( new Date(Long.valueOf(obj.getString("dateline")) * 1000) );
-                            thread.lastpost = dateFormat.format( new Date(Long.valueOf(obj.getString("lastpost")) * 1000) );
-                            thread.lastposter = obj.getString("lastposter");
-                            thread.views = obj.getString("views");
-                            thread.replies = obj.getString("replies");
-                            result.add(thread);
-                        }
+                        Thread thread = new Thread();
+                        thread.tid = obj.getString("tid");
+                        thread.author = URLDecoder.decode(obj.getString("author"), "UTF-8");
+                        thread.authorid = obj.getString("authorid");
+                        thread.subject = URLDecoder.decode(obj.getString("subject"), "UTF-8");
+                        thread.dateline = dateFormat.format( new Date(Long.valueOf(obj.getString("dateline")) * 1000) );
+                        thread.lastpost = dateFormat.format( new Date(Long.valueOf(obj.getString("lastpost")) * 1000) );
+                        thread.lastposter = URLDecoder.decode(obj.getString("lastposter"), "UTF-8");
+                        thread.views = obj.getString("views");
+                        thread.replies = obj.getString("replies");
+                        result.add(thread);
+                    }
 
-                        if (threadList.length() < 20) {
-                            break;
-                        }
+                    if (threadList.length() < 20) {
+                        break;
                     }
                 }
+            }
         } catch (Exception e) {
             Log.e("ThreadAPI:thread", e.toString());
         }

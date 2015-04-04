@@ -1,7 +1,12 @@
 package io.github.xiaojimao18.bitunion.utils;
 
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -10,7 +15,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLDecoder;
 
 /**
  * Created by cowx on 2015/4/2.
@@ -52,7 +56,7 @@ public class HttpRequest {
                 while((line = reader.readLine()) != null) {
                     response.append(line);
                 }
-                return new JSONObject(URLDecoder.decode(response.toString(), "UTF-8"));
+                return new JSONObject(response.toString());
             }
         } catch (Exception e) {
             Log.e("HttpRequest:post", e.toString());
@@ -62,6 +66,28 @@ public class HttpRequest {
             }
         }
 
+        return null;
+    }
+
+    public Drawable getURLImage(String imgURL) {
+
+        DefaultHttpClient client = new DefaultHttpClient();
+        try {
+            HttpGet httpGet = new HttpGet(imgURL);
+            httpGet.setHeader("Referer", "http://www.bitunion.org");
+            HttpResponse response = client.execute(httpGet);
+            if (response.getStatusLine().getStatusCode() == 200) {
+                HttpEntity entity = response.getEntity();
+                if (entity == null) {
+                    return null;
+                } else {
+                    InputStream imgStream = entity.getContent();
+                    return Drawable.createFromStream(imgStream, imgURL);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("HttpRequest:getURLImage:" + imgURL, e.toString());
+        }
         return null;
     }
 }

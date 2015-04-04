@@ -7,13 +7,14 @@
     <android.support.v4.widget.SwipeRefreshLayout
         android:id="@+id/swipe_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent">
 
         <ListView android:id="@+id/thread_list"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:divider="#eee"
+            android:background="#eee">
         </ListView>
-
     </android.support.v4.widget.SwipeRefreshLayout>
 
     <!-- The navigation drawer -->

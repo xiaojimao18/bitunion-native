@@ -22,14 +22,21 @@ public class LoginAPI {
         return loginAPI;
     }
 
-    public JSONObject login(String username, String password) {
+    public String login(String username, String password) {
         try {
             JSONObject params = new JSONObject();
             params.put("action", "login");
             params.put("username", username);
             params.put("password", password);
 
-            return HttpRequest.getInstance().post(url, params);
+            JSONObject obj = HttpRequest.getInstance().post(url, params);
+            if (obj == null) {
+                return null;
+            } else if (obj.getString("result").equals("success")) {
+                return obj.getString("session");
+            } else {
+                return "";
+            }
         } catch (Exception e) {
             Log.e("LoginAPI:login", e.toString());
             return null;

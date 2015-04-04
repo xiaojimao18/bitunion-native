@@ -1,6 +1,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:clickable="false">
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
@@ -16,7 +17,7 @@
             android:orientation = "horizontal">
 
             <!-- 头像 -->
-            <ImageView android:id="@+id/item_thread_avatar"
+            <ImageView android:id="@+id/item_post_avatar"
                 android:layout_width="@dimen/avatar_size"
                 android:layout_height="@dimen/avatar_size"
                 android:contentDescription="@string/image_desc"
@@ -27,13 +28,13 @@
                 android:layout_height="@dimen/info_size"
                 android:layout_weight="1">
 
-                <TextView android:id="@+id/item_thread_username"
+                <TextView android:id="@+id/item_post_username"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_alignParentTop="true"
                     android:textSize="@dimen/user_font_size" />
 
-                <TextView android:id="@+id/item_thread_time"
+                <TextView android:id="@+id/item_post_time"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_alignParentBottom="true"
@@ -41,29 +42,37 @@
 
             </RelativeLayout>
 
-            <!-- 帖子回复数 -->
+            <!-- 楼层数 -->
             <RelativeLayout android:layout_width="wrap_content"
                 android:layout_height="@dimen/reply_num_size">
 
-                <TextView android:id="@+id/item_thread_reply_num"
+                <TextView android:id="@+id/item_post_floor"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerInParent="true"
-                    android:textSize="@dimen/reply_num_font_size"/>
+                    android:textSize="@dimen/floor_font_size"/>
 
             </RelativeLayout>
 
         </LinearLayout>
 
-        <!-- 帖子标题 -->
-        <TextView android:id="@+id/item_thread_title"
+        <!-- 帖子标题
+        <TextView android:id="@+id/item_post_title"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:textSize="@dimen/title_font_size"
+            android:textColor="#000">
+        </TextView> -->
+
+        <!-- 帖子内容 -->
+        <TextView android:id="@+id/item_post_content"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:textSize="@dimen/content_font_size"
             android:textColor="#333"
             android:layout_marginTop="5px"
-            android:layout_marginBottom="5px">
+            android:layout_margin="5px">
         </TextView>
-
     </LinearLayout>
+
 </LinearLayout>

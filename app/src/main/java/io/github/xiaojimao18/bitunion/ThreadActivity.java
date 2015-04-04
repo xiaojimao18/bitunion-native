@@ -1,5 +1,6 @@
 package io.github.xiaojimao18.bitunion;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -14,8 +15,6 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +50,6 @@ public class ThreadActivity extends ActionBarActivity {
         mSwipeFreshView = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
 
         mThreadListView.setAdapter(mThreadAdapter);
-        mThreadListView.setDividerHeight(18);
 
         mFid = "14";
 
@@ -144,6 +142,16 @@ public class ThreadActivity extends ActionBarActivity {
             TextView title = (TextView) convertView.findViewById(R.id.item_thread_title);
             title.setText(thread.subject);
 
+            convertView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(ThreadActivity.this, PostActivity.class);
+                    intent.putExtra("tid", thread.tid);
+                    intent.putExtra("title", thread.subject);
+                    startActivity(intent);
+                }
+            });
+
             return convertView;
         }
     }
@@ -166,23 +174,29 @@ public class ThreadActivity extends ActionBarActivity {
         }
 
         @Override
+        protected void onPreExecute() {
+            if (!mSwipeFreshView.isRefreshing()) {
+                mSwipeFreshView.setRefreshing(true);
+            }
+        }
+
+        @Override
         protected List<ThreadAPI.Thread> doInBackground(Void... params) {
             List<ThreadAPI.Thread> result = ThreadAPI.getInstance().thread(mUsername, mSession, mFid, mFrom, mTo);
             try {
+                // 请求成功但是没有数据，可能是session过期，获取新的session
                 if (result != null && result.size() == 0) {
                     String username = SharedConfig.getInstance().getConfig(getApplicationContext(), "username");
                     String password = SharedConfig.getInstance().getConfig(getApplicationContext(), "password");
 
-                    // 重新获取sesssion
-                    JSONObject obj = LoginAPI.getInstance().login(username, password);
-                    if (obj == null) {
+                    String session = LoginAPI.getInstance().login(username, password);
+                    if (session == null) {
                         Toast.makeText(getApplicationContext(), getString(R.string.error_network), Toast.LENGTH_SHORT).show();
+                    } else {
+                        // 重新请求数据
+                        SharedConfig.getInstance().setConfig(getApplicationContext(), "session", session);
+                        result = ThreadAPI.getInstance().thread(mUsername, session, mFid, mFrom, mTo);
                     }
-                    String session = obj.getString("session");
-                    SharedConfig.getInstance().setConfig(getApplicationContext(), "session", session);
-
-                    // 重新请求数据
-                    result = ThreadAPI.getInstance().thread(mUsername, mSession, mFid, mFrom, mTo);
                 }
             } catch (Exception e) {
                 Log.e("ThreadActivity:doInBackground", e.toString());
