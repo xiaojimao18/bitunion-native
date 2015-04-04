@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,6 +22,7 @@ import android.widget.Toast;
 import org.json.JSONObject;
 
 import io.github.xiaojimao18.bitunion.api.LoginAPI;
+import io.github.xiaojimao18.bitunion.utils.SharedConfig;
 
 
 public class LoginActivity extends Activity {
@@ -131,7 +133,7 @@ public class LoginActivity extends Activity {
     }
 
     /**
-     * 登录的异步任务
+     * 登录Task
      */
     public class UserLoginTask extends AsyncTask<Void, Void, JSONObject> {
         private final String mUsername;
@@ -153,13 +155,20 @@ public class LoginActivity extends Activity {
             showProgress(false);
             try {
                 if (result == null) {
-                    Log.d("UserLoginTask:onPostExecute", "error_network");
                     Toast.makeText(getApplicationContext(), getString(R.string.error_network), Toast.LENGTH_SHORT).show();
-                } else if (result.get("result").equals("fail")) {
+                } else if (result.getString("result").equals("fail")) {
                     Toast.makeText(getApplicationContext(), getString(R.string.error_incorrect_login), Toast.LENGTH_SHORT).show();
+                    Log.d("UserLoginTask:onPostExecute", result.toString());
                 } else {
-                    Log.d("UserLoginTask:onPostExecute", "success");
-                    //finish();
+                    SharedConfig.getInstance().setConfig(getApplicationContext(), "username", mUsername);
+                    SharedConfig.getInstance().setConfig(getApplicationContext(), "password", mPassword);
+                    SharedConfig.getInstance().setConfig(getApplicationContext(), "session", result.getString("session"));
+
+                    Intent intent = new Intent();
+                    intent.setClass(LoginActivity.this, ThreadActivity.class);
+                    startActivity(intent);
+
+                    finish();
                 }
             } catch (Exception e) {
                 Log.e("UserLoginTask:onPostExecute", e.toString());

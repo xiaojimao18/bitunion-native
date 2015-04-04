@@ -11,7 +11,7 @@ import io.github.xiaojimao18.bitunion.utils.HttpRequest;
  */
 public class LoginAPI {
     private static LoginAPI loginAPI;
-    private static String url = "http://www.bitunion.org/open_api/bu_logging.php";
+    private final String url = "http://www.bitunion.org/open_api/bu_logging.php";
 
     private LoginAPI() {}
 

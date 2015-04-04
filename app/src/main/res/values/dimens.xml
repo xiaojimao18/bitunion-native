@@ -2,4 +2,18 @@
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
+
+    <!-- item sizes -->
+    <dimen name="avatar_size">50dp</dimen>
+    <dimen name="info_size">45dp</dimen>
+    <dimen name="reply_num_size">50dp</dimen>
+
+    <dimen name="user_font_size">15sp</dimen>
+    <dimen name="time_font_size">10sp</dimen>
+    <dimen name="floor_font_size">16sp</dimen>
+    <dimen name="reply_num_font_size">20sp</dimen>
+    <dimen name="title_font_size">16sp</dimen>
+    <dimen name="content_font_size">16sp</dimen>
+
+    <dimen name="navigation_drawer_width">240dp</dimen>
 </resources>

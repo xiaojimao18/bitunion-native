@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
 
 /**
  * Created by cowx on 2015/4/2.
@@ -51,7 +52,7 @@ public class HttpRequest {
                 while((line = reader.readLine()) != null) {
                     response.append(line);
                 }
-                return new JSONObject(response.toString());
+                return new JSONObject(URLDecoder.decode(response.toString(), "UTF-8"));
             }
         } catch (Exception e) {
             Log.e("HttpRequest:post", e.toString());
