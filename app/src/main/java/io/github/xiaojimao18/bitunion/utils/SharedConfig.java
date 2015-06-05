@@ -27,9 +27,18 @@ public class SharedConfig extends Application{
         return sharedPref.getString(key, null);
     }
 
-    public void setConfig(String key, String value) {
+    public boolean setConfig(String key, String value) {
         SharedPreferences.Editor edit = sharedPref.edit();
-        edit.putString(key, value);
-        edit.commit();
+        return edit.putString(key, value).commit();
+    }
+
+    public boolean removeConfig(String key) {
+        SharedPreferences.Editor edit = sharedPref.edit();
+        return edit.remove(key).commit();
+    }
+
+    public boolean clearConfig() {
+        SharedPreferences.Editor edit = sharedPref.edit();
+        return edit.clear().commit();
     }
 }

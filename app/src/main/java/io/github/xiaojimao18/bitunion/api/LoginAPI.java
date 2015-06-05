@@ -4,6 +4,8 @@ import android.util.Log;
 
 import org.json.JSONObject;
 
+import java.net.URLEncoder;
+
 import io.github.xiaojimao18.bitunion.utils.HttpRequest;
 import io.github.xiaojimao18.bitunion.utils.SharedConfig;
 
@@ -27,8 +29,8 @@ public class LoginAPI {
         try {
             JSONObject params = new JSONObject();
             params.put("action", "login");
-            params.put("username", username);
-            params.put("password", password);
+            params.put("username", URLEncoder.encode(username));
+            params.put("password", URLEncoder.encode(password));
 
             JSONObject obj = HttpRequest.getInstance().post(SharedConfig.getInstance().getConfig("nettype") + url, params);
             if (obj == null) {
