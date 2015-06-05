@@ -25,7 +25,6 @@ import java.util.List;
 import io.github.xiaojimao18.bitunion.api.ForumAPI;
 import io.github.xiaojimao18.bitunion.api.LoginAPI;
 import io.github.xiaojimao18.bitunion.api.ThreadAPI;
-import io.github.xiaojimao18.bitunion.utils.SharedConfig;
 
 
 public class ThreadActivity extends ActionBarActivity {
@@ -263,9 +262,7 @@ public class ThreadActivity extends ActionBarActivity {
     public class ForumTask extends AsyncTask<Void, Void, List<ForumAPI.Forum>> {
         @Override
         protected List<ForumAPI.Forum> doInBackground(Void... params) {
-            String username = SharedConfig.getInstance().getConfig("username");
-            String session = SharedConfig.getInstance().getConfig("session");
-            return ForumAPI.getInstance().forum(username, session);
+            return ForumAPI.getInstance().forum();
         }
 
         @Override
@@ -298,21 +295,15 @@ public class ThreadActivity extends ActionBarActivity {
 
         @Override
         protected List<ThreadAPI.Thread> doInBackground(Void... params) {
-            String username = SharedConfig.getInstance().getConfig("username");
-            String session = SharedConfig.getInstance().getConfig("session");
-            List<ThreadAPI.Thread> result = ThreadAPI.getInstance().thread(username, session, mFid, mFrom, mTo);
+
+            List<ThreadAPI.Thread> result = ThreadAPI.getInstance().thread(mFid, mFrom, mTo);
             try {
                 // 请求成功但是没有数据，可能是session过期，获取新的session
                 if (result != null && result.size() == 0) {
-                    String password = SharedConfig.getInstance().getConfig("password");
-
-                    session = LoginAPI.getInstance().login(username, password);
-                    if (session == null) {
-                        return null;
+                    if (LoginAPI.getInstance().refreshSession()) {
+                        result = ThreadAPI.getInstance().thread(mFid, mFrom, mTo);
                     } else {
-                        // 重新请求数据
-                        SharedConfig.getInstance().setConfig("session", session);
-                        result = ThreadAPI.getInstance().thread(username, session, mFid, mFrom, mTo);
+                        return null;
                     }
                 }
             } catch (Exception e) {

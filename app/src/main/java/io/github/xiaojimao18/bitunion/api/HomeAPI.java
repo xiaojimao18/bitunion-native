@@ -5,10 +5,12 @@ import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
 import io.github.xiaojimao18.bitunion.utils.HttpRequest;
+import io.github.xiaojimao18.bitunion.utils.SharedConfig;
 
 /**
  * Created by cowx on 2015/4/3.
@@ -30,7 +32,15 @@ public class HomeAPI {
         List<NewThread> result = new ArrayList<>();
 
         try {
-            JSONObject response = HttpRequest.getInstance().post(url, null);
+            String username = SharedConfig.getInstance().getConfig("username");
+            String session = SharedConfig.getInstance().getConfig("session");
+
+            JSONObject params = new JSONObject();
+            params.put("action", "forum");
+            params.put("username", URLEncoder.encode(username, "UTF-8"));
+            params.put("session", URLEncoder.encode(session, "UTF-8"));
+
+            JSONObject response = HttpRequest.getInstance().post(url, params);
             if (response == null) {
                 return null;
             }

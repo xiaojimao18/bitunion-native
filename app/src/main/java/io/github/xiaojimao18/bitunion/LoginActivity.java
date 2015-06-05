@@ -156,7 +156,7 @@ public class LoginActivity extends Activity {
     /**
      * 登录Task
      */
-    public class UserLoginTask extends AsyncTask<Void, Void, String> {
+    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
         private final String mUsername;
         private final String mPassword;
 
@@ -166,24 +166,20 @@ public class LoginActivity extends Activity {
         }
 
         @Override
-        protected String doInBackground(Void... params) {
+        protected Boolean doInBackground(Void... params) {
             return LoginAPI.getInstance().login(mUsername, mPassword);
         }
 
         @Override
-        protected void onPostExecute(final String session) {
+        protected void onPostExecute(final Boolean result) {
             mAuthTask = null;
             showProgress(false);
             try {
-                if (session == null) {
+                if (result == null) {
                     Toast.makeText(getApplicationContext(), getString(R.string.error_network), Toast.LENGTH_SHORT).show();
-                } else if (session.equals("")) {
+                } else if (result == false) {
                     Toast.makeText(getApplicationContext(), getString(R.string.error_incorrect_login), Toast.LENGTH_SHORT).show();
                 } else {
-                    SharedConfig.getInstance().setConfig("username", mUsername);
-                    SharedConfig.getInstance().setConfig("password", mPassword);
-                    SharedConfig.getInstance().setConfig("session", session);
-
                     Intent intent = new Intent();
                     intent.setClass(LoginActivity.this, ThreadActivity.class);
                     startActivity(intent);

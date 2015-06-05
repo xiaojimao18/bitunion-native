@@ -31,7 +31,6 @@ import io.github.xiaojimao18.bitunion.api.LoginAPI;
 import io.github.xiaojimao18.bitunion.api.PostAPI;
 import io.github.xiaojimao18.bitunion.compenont.URLDrawable;
 import io.github.xiaojimao18.bitunion.utils.HttpRequest;
-import io.github.xiaojimao18.bitunion.utils.SharedConfig;
 
 
 public class PostActivity extends ActionBarActivity {
@@ -279,21 +278,14 @@ public class PostActivity extends ActionBarActivity {
 
         @Override
         protected List<PostAPI.Post> doInBackground(Void... params) {
-            String username = SharedConfig.getInstance().getConfig("username");
-            String session = SharedConfig.getInstance().getConfig("session");
-            List<PostAPI.Post> result = PostAPI.getInstance().post(username, session, mTid, mFrom, mTo);
+            List<PostAPI.Post> result = PostAPI.getInstance().post(mTid, mFrom, mTo);
             try {
                 // 请求成功但是没有数据，可能是session过期，获取新的session
                 if (result != null && result.size() == 0) {
-                    String password = SharedConfig.getInstance().getConfig("password");
-
-                    session = LoginAPI.getInstance().login(username, password);
-                    if (session == null) {
-                        return null;
+                    if (LoginAPI.getInstance().refreshSession()) {
+                        result = PostAPI.getInstance().post(mTid, mFrom, mTo);
                     } else {
-                        // 重新请求数据
-                        SharedConfig.getInstance().setConfig("session", session);
-                        result = PostAPI.getInstance().post(username, session, mTid, mFrom, mTo);
+                        return null;
                     }
                 }
             } catch (Exception e) {

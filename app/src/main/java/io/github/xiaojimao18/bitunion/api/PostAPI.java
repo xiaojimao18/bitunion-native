@@ -16,6 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.github.xiaojimao18.bitunion.utils.HttpRequest;
+import io.github.xiaojimao18.bitunion.utils.SharedConfig;
 
 /**
  * Created by cowx on 2015/4/4.
@@ -33,10 +34,13 @@ public class PostAPI {
         return postAPI;
     }
 
-    public List<Post> post(String username, String session, String tid, int from, int to) {
+    public List<Post> post(String tid, int from, int to) {
         List<Post> result = new ArrayList<>();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA);
         try {
+            String username = SharedConfig.getInstance().getConfig("username");
+            String session = SharedConfig.getInstance().getConfig("session");
+
             for (int start = from; start < to; start += 20) {
                 int end = start + 20 < to ? start + 20 : to;
                 JSONObject params = new JSONObject();
@@ -47,7 +51,7 @@ public class PostAPI {
                 params.put("from", String.valueOf(start));
                 params.put("to", String.valueOf(end));
 
-                JSONObject response = HttpRequest.getInstance().post(url, params);
+                JSONObject response = HttpRequest.getInstance().post(SharedConfig.getInstance().getConfig("nettype") + url, params);
                 if (response == null) {
                     return null;
                 } else if (response.getString("result").equals("success")) {

@@ -35,10 +35,10 @@ public class HttpRequest {
     public JSONObject post(String urlString, JSONObject params) {
         HttpURLConnection conn = null;
         try {
-            Log.d("post", SharedConfig.getInstance().getConfig("nettype") + urlString);
-            URL url = new URL(SharedConfig.getInstance().getConfig("nettype") + urlString);
+            URL url = new URL(urlString);
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
+            conn.setReadTimeout(timeout);
             conn.setConnectTimeout(timeout);
             conn.setDoInput(true);
             conn.setDoOutput(true);
