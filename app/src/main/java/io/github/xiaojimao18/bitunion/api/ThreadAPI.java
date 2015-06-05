@@ -20,7 +20,7 @@ import io.github.xiaojimao18.bitunion.utils.HttpRequest;
  */
 public class ThreadAPI {
     private static ThreadAPI threadAPI;
-    private final String url = "http://www.bitunion.org/open_api/bu_thread.php";
+    private final String url = "open_api/bu_thread.php";
 
     private ThreadAPI() {}
 

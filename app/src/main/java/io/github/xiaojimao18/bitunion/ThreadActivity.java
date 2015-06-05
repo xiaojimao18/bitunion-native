@@ -3,14 +3,17 @@ package io.github.xiaojimao18.bitunion;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -19,55 +22,90 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.xiaojimao18.bitunion.api.ForumAPI;
 import io.github.xiaojimao18.bitunion.api.LoginAPI;
 import io.github.xiaojimao18.bitunion.api.ThreadAPI;
 import io.github.xiaojimao18.bitunion.utils.SharedConfig;
 
 
 public class ThreadActivity extends ActionBarActivity {
-
+    private List<ForumAPI.Forum> mForumList;
+    private ForumAdapter mForumAdapter;
     private List<ThreadAPI.Thread> mThreadList;
     private ThreadAdapter mThreadAdapter;
 
+    private DrawerLayout mDrawerLayout;
     private ListView mThreadListView;
     private ListView mForumListView;
     private SwipeRefreshLayout mSwipeFreshView;
 
     private ThreadTask mThreadTask;
+    private ForumTask mForumTask;
 
     private String mFid;
+    private String mTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_thread);
 
+        mForumList = new ArrayList<>();
+        mForumAdapter = new ForumAdapter();
         mThreadList = new ArrayList<>();
         mThreadAdapter = new ThreadAdapter();
 
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.thread_drawer_layout);
         mThreadListView = (ListView) findViewById(R.id.thread_list);
         mForumListView  = (ListView) findViewById(R.id.forum_list);
-        mSwipeFreshView = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
+        mSwipeFreshView = (SwipeRefreshLayout) findViewById(R.id.thread_swipe_container);
 
         mThreadListView.setAdapter(mThreadAdapter);
+        mForumListView.setAdapter(mForumAdapter);
 
         mFid = "14";
+        mTitle = "灌水乐园";
 
         mSwipeFreshView.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                mThreadTask = new ThreadTask(mFid, 0, 20, true);
+                mThreadTask = new ThreadTask(0, 20, true);
                 mThreadTask.execute((Void) null);
             }
         });
 
-        mThreadTask = new ThreadTask(mFid, 0, 20, false);
+        mThreadListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            boolean isLastRow = false;
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                if (totalItemCount > 0 && firstVisibleItem + visibleItemCount == totalItemCount) {
+                    isLastRow = true;
+                }
+            }
+
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                if (isLastRow && scrollState == AbsListView.OnScrollListener.SCROLL_STATE_IDLE) {
+                    int current = mThreadList.size();
+
+                    mThreadTask = new ThreadTask(current, current + 20, false);
+                    mThreadTask.execute((Void) null);
+
+                    isLastRow = false;
+                }
+            }
+        });
+
+        mThreadTask = new ThreadTask(0, 20, false);
         mThreadTask.execute((Void) null);
+
+        mForumTask = new ForumTask();
+        mForumTask.execute((Void) null);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_thread, menu);
         return true;
     }
@@ -81,12 +119,77 @@ public class ThreadActivity extends ActionBarActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent = new Intent(ThreadActivity.this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    // 列表样式
+    public class ForumAdapter extends BaseAdapter {
+
+        @Override
+        public int getCount() {
+            if (mForumList == null) {
+                return 0;
+            } else {
+                return mForumList.size();
+            }
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return null;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return 0;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            TextView forumView = new TextView(ThreadActivity.this);
+
+            final ForumAPI.Forum forum = mForumList.get(position);
+
+            forumView.setHeight(60);
+            if (forum.type.equalsIgnoreCase("group")) {
+                forumView.setTextSize(22);
+                forumView.setHeight(80);
+                forumView.setTextColor(getResources().getColor(R.color.title_color));
+                forumView.setBackgroundColor(getResources().getColor(R.color.primary_color));
+                forumView.setGravity(Gravity.CENTER);
+                forumView.setClickable(false);
+            } else if (forum.type.equalsIgnoreCase("forum")) {
+                forumView.setTextSize(20);
+                forumView.setPadding(10, 0, 0, 0);
+            } else if (forum.type.equalsIgnoreCase("sub")) {
+                forumView.setTextSize(18);
+                forumView.setPadding(40, 0, 0, 0);
+            }
+
+            String name = forum.name.replace("<font color=red>", "").replace("</font>", "");
+            forumView.setText(name);
+
+            forumView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (!forum.type.equals("group")) {
+                        mFid = forum.fid;
+                        mTitle = forum.name;
+                        mThreadTask = new ThreadTask(0, 20, true);
+                        mThreadTask.execute();
+                        mDrawerLayout.closeDrawers();
+                    }
+                }
+            });
+
+            return forumView;
+        }
+    }
 
     public class ThreadAdapter extends BaseAdapter{
 
@@ -131,12 +234,12 @@ public class ThreadActivity extends ActionBarActivity {
             // 回复数
             TextView replyNum = (TextView) convertView.findViewById(R.id.item_thread_reply_num);
             replyNum.setText(thread.replies);
-            int num = Integer.parseInt(thread.replies);
-            if (num >= 100) {
-                replyNum.setTextColor(android.graphics.Color.RED);
-            } else if(num >= 10) {
-                replyNum.setTextColor(android.graphics.Color.BLUE);
-            }
+            //  int num = Integer.parseInt(thread.replies);
+            //  if (num >= 100) {
+            //      replyNum.setTextColor(android.graphics.Color.RED);
+            //  } else if(num >= 10) {
+            //      replyNum.setTextColor(android.graphics.Color.BLUE);
+            //  }
 
             // 帖子题目
             TextView title = (TextView) convertView.findViewById(R.id.item_thread_title);
@@ -148,6 +251,7 @@ public class ThreadActivity extends ActionBarActivity {
                     Intent intent = new Intent(ThreadActivity.this, PostActivity.class);
                     intent.putExtra("tid", thread.tid);
                     intent.putExtra("title", thread.subject);
+                    intent.putExtra("sum", Integer.valueOf(thread.replies) + 1);
                     startActivity(intent);
                 }
             });
@@ -156,50 +260,63 @@ public class ThreadActivity extends ActionBarActivity {
         }
     }
 
+    public class ForumTask extends AsyncTask<Void, Void, List<ForumAPI.Forum>> {
+        @Override
+        protected List<ForumAPI.Forum> doInBackground(Void... params) {
+            String username = SharedConfig.getInstance().getConfig("username");
+            String session = SharedConfig.getInstance().getConfig("session");
+            return ForumAPI.getInstance().forum(username, session);
+        }
+
+        @Override
+        protected void onPostExecute(final List<ForumAPI.Forum> result) {
+            if (result == null) {
+                Toast.makeText(getApplicationContext(), getString(R.string.error_network), Toast.LENGTH_SHORT).show();
+            } else {
+                mForumList.addAll(result);
+                mForumAdapter.notifyDataSetChanged();
+            }
+        }
+    }
+
     public class ThreadTask extends AsyncTask<Void, Void, List<ThreadAPI.Thread>> {
-        private final String mUsername;
-        private final String mSession;
-        private final String mFid;
         private final int mFrom;
         private final int mTo;
-        private final boolean mIsSwipe;
+        private final boolean mClearData;
 
-        public ThreadTask(String fid, int from, int to, boolean isSwipe) {
-            mUsername = SharedConfig.getInstance().getConfig(getApplicationContext(), "username");
-            mSession = SharedConfig.getInstance().getConfig(getApplicationContext(), "session");
-            mFid = fid;
+        public ThreadTask(int from, int to, boolean clearData) {
             mFrom = from;
             mTo = to;
-            mIsSwipe = isSwipe;
+            mClearData = clearData;
         }
 
         @Override
         protected void onPreExecute() {
-            if (!mSwipeFreshView.isRefreshing()) {
-                mSwipeFreshView.setRefreshing(true);
-            }
+            mSwipeFreshView.setRefreshing(true);
+            setTitle(mTitle);
         }
 
         @Override
         protected List<ThreadAPI.Thread> doInBackground(Void... params) {
-            List<ThreadAPI.Thread> result = ThreadAPI.getInstance().thread(mUsername, mSession, mFid, mFrom, mTo);
+            String username = SharedConfig.getInstance().getConfig("username");
+            String session = SharedConfig.getInstance().getConfig("session");
+            List<ThreadAPI.Thread> result = ThreadAPI.getInstance().thread(username, session, mFid, mFrom, mTo);
             try {
                 // 请求成功但是没有数据，可能是session过期，获取新的session
                 if (result != null && result.size() == 0) {
-                    String username = SharedConfig.getInstance().getConfig(getApplicationContext(), "username");
-                    String password = SharedConfig.getInstance().getConfig(getApplicationContext(), "password");
+                    String password = SharedConfig.getInstance().getConfig("password");
 
-                    String session = LoginAPI.getInstance().login(username, password);
+                    session = LoginAPI.getInstance().login(username, password);
                     if (session == null) {
-                        Toast.makeText(getApplicationContext(), getString(R.string.error_network), Toast.LENGTH_SHORT).show();
+                        return null;
                     } else {
                         // 重新请求数据
-                        SharedConfig.getInstance().setConfig(getApplicationContext(), "session", session);
-                        result = ThreadAPI.getInstance().thread(mUsername, session, mFid, mFrom, mTo);
+                        SharedConfig.getInstance().setConfig("session", session);
+                        result = ThreadAPI.getInstance().thread(username, session, mFid, mFrom, mTo);
                     }
                 }
             } catch (Exception e) {
-                Log.e("ThreadActivity:doInBackground", e.toString());
+                Log.e("ThreadActivity", e.toString());
             }
             return result;
         }
@@ -209,12 +326,16 @@ public class ThreadActivity extends ActionBarActivity {
             if (result == null) {
                 Toast.makeText(getApplicationContext(), getString(R.string.error_network), Toast.LENGTH_SHORT).show();
             } else {
-                if (mIsSwipe && result.size() > 0) {
+                if (mClearData && result.size() > 0) {
                     mThreadList.clear();
                 }
+
                 mThreadList.addAll(result);
                 mThreadAdapter.notifyDataSetChanged();
-                //Toast.makeText(getApplicationContext(), "更新了"+result.size()+"条数据", Toast.LENGTH_SHORT).show();
+
+                if (mClearData && result.size() > 0) {
+                    mThreadListView.setSelectionAfterHeaderView();
+                }
             }
             if (mSwipeFreshView.isRefreshing()) {
                 mSwipeFreshView.setRefreshing(false);

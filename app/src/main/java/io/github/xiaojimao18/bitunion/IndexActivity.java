@@ -13,7 +13,7 @@ public class IndexActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_index);
 
-        String session = SharedConfig.getInstance().getConfig(getApplicationContext(), "session");
+        String session = SharedConfig.getInstance().getConfig("session");
         Intent intent = new Intent();
         if (session == null) {
             intent.setClass(IndexActivity.this, LoginActivity.class);

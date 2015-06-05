@@ -22,7 +22,7 @@ import io.github.xiaojimao18.bitunion.utils.HttpRequest;
  */
 public class PostAPI {
     private static PostAPI postAPI;
-    private final String url = "http://www.bitunion.org/open_api/bu_post.php";
+    private final String url = "open_api/bu_post.php";
 
     private PostAPI() {}
 
@@ -59,18 +59,18 @@ public class PostAPI {
                         post.fid = obj.getString("fid");
                         post.tid = obj.getString("tid");
                         post.pid = obj.getString("pid");
-                        post.author = URLDecoder.decode(obj.getString("author"), "UTF-8");
                         post.authorid = obj.getString("authorid");
+                        post.usesig = obj.getString("usesig");
                         post.dateline = dateFormat.format( new Date(Long.valueOf(obj.getString("dateline")) * 1000) );
                         post.avatar = URLDecoder.decode(obj.getString("avatar"), "UTF-8");
-                        post.usesig = obj.getString("usesig");
-
+                        post.author = URLDecoder.decode(obj.getString("author"), "UTF-8");
                         post.subject = URLDecoder.decode(obj.getString("subject"), "UTF-8");
                         post.message = URLDecoder.decode(obj.getString("message"), "UTF-8");
                         post.attachment = URLDecoder.decode(obj.getString("attachment"), "UTF-8");
 
+                        post.avatar = parseAvatar(post.avatar);
                         post.content = "<h5>" + post.subject + "</h5>";
-                        post.content += htmlParser(post.message);
+                        post.content += parseQuotes(post.message);
                         if (!post.attachment.equals("null")) {
                             post.content += "<br><img src=\"http://www.bitunion.org/" + post.attachment + "\">";
                         }
@@ -89,26 +89,43 @@ public class PostAPI {
         return result;
     }
 
-    private String htmlParser(String html) {
+    private String parseQuotes(String html) {
         String regex = "<table.*?<table.*?<b>(.*?)</b>(.*?)<br />([\\s\\S]*?)</td></tr></table>.*?</table>";
         Pattern pattern = Pattern.compile(regex);
         try {
             Matcher m = pattern.matcher(html);
-            if (m.find()) {
+            while (m.find()) {
                 String name = m.group(1);
                 String time = m.group(2);
                 String content = m.group(3).trim();
 
                 StringBuilder sb = new StringBuilder();
-                sb.append("<p><font color=\"blue\">@");
+                sb.append("<blockquote><font color=\"#4b9ce0\">@");
                 sb.append(name + " : " + content);
-                sb.append("</font></p>");
+                sb.append("</font></blockquote>");
                 html = html.replace(m.group(), sb.toString());
+
+                m = pattern.matcher(html);
             }
         } catch (Exception e) {
             Log.e("PostAPI:htmlParser", e.toString());
         }
         return html;
+    }
+
+    private String parseAvatar(String str) {
+        String regex = "src=\"(.*?)\"";
+        Pattern pattern = Pattern.compile(regex);
+        try {
+            Matcher m = pattern.matcher(str);
+            if (m.find()) {
+                return "http://www.bitunion.org/" + m.group(1);
+            }
+        } catch (Exception e) {
+            Log.e("PostAPI:parseAvatar", e.toString());
+        }
+
+        return null;
     }
 
     public class Post {

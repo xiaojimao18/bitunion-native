@@ -5,15 +5,15 @@
     android:layout_height="match_parent">
 
     <android.support.v4.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_container"
+        android:id="@+id/thread_swipe_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <ListView android:id="@+id/thread_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:divider="#eee"
-            android:background="#eee">
+            android:divider="@color/background_color"
+            android:background="@color/background_color">
         </ListView>
     </android.support.v4.widget.SwipeRefreshLayout>
 

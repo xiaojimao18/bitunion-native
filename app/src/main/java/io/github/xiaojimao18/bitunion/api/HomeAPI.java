@@ -15,7 +15,7 @@ import io.github.xiaojimao18.bitunion.utils.HttpRequest;
  */
 public class HomeAPI {
     private static HomeAPI homeAPI;
-    private final String url = "http://www.bitunion.org/open_api/bu_home.php";
+    private final String url = "open_api/bu_home.php";
 
     private HomeAPI() {}
 

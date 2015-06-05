@@ -21,7 +21,7 @@ import java.net.URL;
  */
 public class HttpRequest {
     private static HttpRequest httpRequest;
-    private static int timeout = 4000;
+    private static int timeout = 3000;
 
     private HttpRequest() {}
 
@@ -35,7 +35,8 @@ public class HttpRequest {
     public JSONObject post(String urlString, JSONObject params) {
         HttpURLConnection conn = null;
         try {
-            URL url = new URL(urlString);
+            Log.d("post", SharedConfig.getInstance().getConfig("nettype") + urlString);
+            URL url = new URL(SharedConfig.getInstance().getConfig("nettype") + urlString);
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(timeout);
@@ -74,7 +75,7 @@ public class HttpRequest {
         DefaultHttpClient client = new DefaultHttpClient();
         try {
             HttpGet httpGet = new HttpGet(imgURL);
-            httpGet.setHeader("Referer", "http://www.bitunion.org");
+            httpGet.setHeader("Referer", SharedConfig.getInstance().getConfig("nettype"));
             HttpResponse response = client.execute(httpGet);
             if (response.getStatusLine().getStatusCode() == 200) {
                 HttpEntity entity = response.getEntity();

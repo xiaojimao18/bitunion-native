@@ -16,6 +16,8 @@ import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,8 +31,12 @@ public class LoginActivity extends Activity {
     // 组件
     private EditText mUsernameView;
     private EditText mPasswordView;
+    private RadioGroup mNettypeGroup;
+    private RadioButton mNettypeOutButton, mNettypeInButton;
     private View mProgressView;
     private View mLoginFormView;
+
+    private String nettype;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +53,23 @@ public class LoginActivity extends Activity {
                     return true;
                 }
                 return false;
+            }
+        });
+
+        // 默认是外网模式
+        mNettypeGroup = (RadioGroup) findViewById(R.id.nettype);
+        mNettypeInButton = (RadioButton) findViewById(R.id.nettype_in);
+        mNettypeOutButton = (RadioButton) findViewById(R.id.nettype_out);
+
+        SharedConfig.getInstance().setConfig("nettype", "http://out.bitunion.org/");
+        mNettypeGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                if (checkedId == mNettypeInButton.getId()) {
+                    SharedConfig.getInstance().setConfig("nettype", "http://www.bitunion.org/");
+                } else if (checkedId == mNettypeOutButton.getId()) {
+                    SharedConfig.getInstance().setConfig("nettype", "http://out.bitunion.org/");
+                }
             }
         });
 
@@ -157,9 +180,9 @@ public class LoginActivity extends Activity {
                 } else if (session.equals("")) {
                     Toast.makeText(getApplicationContext(), getString(R.string.error_incorrect_login), Toast.LENGTH_SHORT).show();
                 } else {
-                    SharedConfig.getInstance().setConfig(getApplicationContext(), "username", mUsername);
-                    SharedConfig.getInstance().setConfig(getApplicationContext(), "password", mPassword);
-                    SharedConfig.getInstance().setConfig(getApplicationContext(), "session", session);
+                    SharedConfig.getInstance().setConfig("username", mUsername);
+                    SharedConfig.getInstance().setConfig("password", mPassword);
+                    SharedConfig.getInstance().setConfig("session", session);
 
                     Intent intent = new Intent();
                     intent.setClass(LoginActivity.this, ThreadActivity.class);
@@ -168,7 +191,7 @@ public class LoginActivity extends Activity {
                     finish();
                 }
             } catch (Exception e) {
-                Log.e("UserLoginTask:onPostExecute", e.toString());
+                Log.e("UserLoginTask", e.toString());
             }
         }
 

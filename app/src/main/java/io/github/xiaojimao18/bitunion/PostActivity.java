@@ -1,44 +1,52 @@
 package io.github.xiaojimao18.bitunion;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Html;
 import android.text.Spanned;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.github.xiaojimao18.bitunion.api.LoginAPI;
 import io.github.xiaojimao18.bitunion.api.PostAPI;
+import io.github.xiaojimao18.bitunion.compenont.URLDrawable;
 import io.github.xiaojimao18.bitunion.utils.HttpRequest;
 import io.github.xiaojimao18.bitunion.utils.SharedConfig;
 
 
 public class PostActivity extends ActionBarActivity {
     private ListView mPostListView;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     private PostTask mPostTask = null;
 
     private List<PostAPI.Post> mPostList;
     private PostAdapter mPostAdapter;
-    private Map<String, Drawable> imgCache;
+    private Map<String, SoftReference<Drawable>> mImgCache;
 
     private String mTid;
+    private String mMajorName;
+    private int mSum;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,16 +54,42 @@ public class PostActivity extends ActionBarActivity {
         setContentView(R.layout.activity_post);
 
         mPostListView = (ListView) findViewById(R.id.post_list);
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.post_swipe_container);
+        mSwipeRefreshLayout.setEnabled(false);
 
         mPostList = new ArrayList<>();
         mPostAdapter = new PostAdapter();
-        imgCache = new HashMap<>();
+        mImgCache = new HashMap<>();
 
         Intent intent = getIntent();
         mTid = intent.getStringExtra("tid");
+        mSum = intent.getIntExtra("sum", 0);
         setTitle(intent.getStringExtra("title"));
 
         mPostListView.setAdapter(mPostAdapter);
+
+        mPostListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            boolean isLastRow = false;
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                if (totalItemCount > 0 && firstVisibleItem + visibleItemCount == totalItemCount) {
+                    isLastRow = true;
+                }
+            }
+
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                if (isLastRow && scrollState == AbsListView.OnScrollListener.SCROLL_STATE_IDLE) {
+                    int current = mPostList.size();
+                    if (current < mSum) {
+                        mPostTask = new PostTask(mTid, current, current + 20);
+                        mPostTask.execute();
+                    }
+                    isLastRow = false;
+                }
+            }
+        });
 
         mPostTask = new PostTask(mTid, 0, 20);
         mPostTask.execute();
@@ -64,20 +98,17 @@ public class PostActivity extends ActionBarActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_post, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent = new Intent(PostActivity.this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
 
@@ -112,19 +143,21 @@ public class PostActivity extends ActionBarActivity {
             PostAPI.Post post = mPostList.get(position);
 
             // 头像
-            //ImageView avatar = (ImageView) convertView.findViewById(R.id.item_thread_avatar);
+            // ImageView avatarView = (ImageView) convertView.findViewById(R.id.item_post_avatar);
+            // if (post.avatar != null) {
+            //    ImageLoader.getInstance().displayImage(post.avatar, avatarView);
+            // }
 
             // 用户名
             TextView usernameView = (TextView) convertView.findViewById(R.id.item_post_username);
             String username = post.author;
-            String majorName = null;
             if (position == 0) {
-                majorName = username;
+                mMajorName = username;
             }
-            if (majorName != null && majorName.equals(username)) {
-                username += " <font color='red'>（楼主）</font>";
+            if (mMajorName != null && mMajorName.equals(username)) {
+                username += " [楼主]";
             }
-            usernameView.setText(Html.fromHtml(username));
+            usernameView.setText(username);
 
             // 时间和日期
             TextView timeView = (TextView) convertView.findViewById(R.id.item_post_time);
@@ -140,7 +173,7 @@ public class PostActivity extends ActionBarActivity {
 
             // 帖子内容
             TextView contentView = (TextView) convertView.findViewById(R.id.item_post_content);
-            Spanned contentSpanned = Html.fromHtml(post.content, new URLImageParser(contentView, post.content), null);
+            Spanned contentSpanned = Html.fromHtml(post.content, new URLImageParser(contentView), null);
             contentView.setText(contentSpanned);
 
             return convertView;
@@ -149,114 +182,124 @@ public class PostActivity extends ActionBarActivity {
 
     public class URLImageParser implements Html.ImageGetter {
         private TextView mTextView;
-        private String mContent;
 
-        public URLImageParser(TextView textView, String content) {
+        public URLImageParser(TextView textView) {
             mTextView = textView;
-            mContent = content;
         }
 
         @Override
         public Drawable getDrawable(String source) {
-            Drawable drawable;
+            URLDrawable urlDrawable = new URLDrawable();
 
             source = source.replace("../", "http://www.bitunion.org/");
-            if (imgCache.containsKey(source)) {
-                drawable = imgCache.get(source);
-            } else {
-                new ImgDownloadTask(mTextView, mContent, source).execute();
-                drawable = getResources().getDrawable(R.drawable.default_picture);
-            }
+            if (mImgCache.containsKey(source)) {
+                urlDrawable.drawable = mImgCache.get(source).get();
 
-            if (drawable != null) {
                 DisplayMetrics dm = getResources().getDisplayMetrics();
 
-                float width = drawable.getIntrinsicWidth() * dm.density * 2;
-                float height = drawable.getIntrinsicHeight() * dm.density * 2;
+                float width = urlDrawable.drawable.getIntrinsicWidth() * dm.density * 2;
+                float height = urlDrawable.drawable.getIntrinsicHeight() * dm.density * 2;
 
                 // 如果超出屏幕范围，则按比例缩小
                 if (width > dm.widthPixels) {
                     float radio = height / width;
-                    width = dm.widthPixels - 10;
+                    width = dm.widthPixels - 50;
                     height = radio * width;
                 }
 
-                drawable.setBounds(0, 0, (int)width, (int)height);
+                urlDrawable.drawable.setBounds(0, 0, (int)width, (int)height);
+                urlDrawable.setBounds(0, 0, (int)width, (int)height);
+            } else {
+                new ImgDownloadTask(urlDrawable).execute(source);
             }
-            return drawable;
-        }
-    }
 
-    public class ImgDownloadTask extends AsyncTask<Void, Void, Drawable> {
-        private TextView mTextView;
-        private String mContent;
-        private String mImgURL;
-
-        public ImgDownloadTask(TextView textView, String content, String imgURL) {
-            mTextView = textView;
-            mContent = content;
-            mImgURL = imgURL;
+            return urlDrawable;
         }
 
-        @Override
-        protected Drawable doInBackground(Void... params) {
-            return HttpRequest.getInstance().getURLImage(mImgURL);
-        }
+        public class ImgDownloadTask extends AsyncTask<String, Void, Drawable> {
+            private URLDrawable mURLDrawable;
 
-        @Override
-        protected void onPostExecute(final Drawable drawable) {
-            if (drawable != null) {
-                imgCache.put(mImgURL, drawable);
+            public ImgDownloadTask(URLDrawable urlDrawable) {
+                mURLDrawable = urlDrawable;
             }
-            mTextView.setText(Html.fromHtml(mContent, new Html.ImageGetter() {
-                @Override
-                public Drawable getDrawable(String source) {
-                    Drawable draw;
-                    if (drawable == null) {
-                        draw = getResources().getDrawable(R.drawable.default_picture);
-                    } else {
-                        draw = drawable;
-                    }
 
-                    if (draw != null) {
-                        DisplayMetrics dm = getResources().getDisplayMetrics();
-
-                        float width = draw.getIntrinsicWidth() * dm.density * 2;
-                        float height = draw.getIntrinsicHeight() * dm.density * 2;
-
-                        // 如果超出屏幕范围，则按比例缩小
-                        if (width > dm.widthPixels) {
-                            float radio = height / width;
-                            width = dm.widthPixels - 60;
-                            height = radio * width;
-                        }
-
-                        draw.setBounds(0, 0, (int)width, (int)height);
-                    }
-                    return draw;
+            @Override
+            protected Drawable doInBackground(String... params) {
+                String url = params[0];
+                Drawable drawable = HttpRequest.getInstance().getURLImage(url);
+                if (drawable != null) {
+                    mImgCache.put(url, new SoftReference<>(drawable));
                 }
-            }, null));
+                return drawable;
+            }
+
+            @Override
+            protected void onPostExecute(final Drawable drawable) {
+                if (drawable != null) {
+                    DisplayMetrics dm = getResources().getDisplayMetrics();
+
+                    float width = drawable.getIntrinsicWidth() * dm.density * 2;
+                    float height = drawable.getIntrinsicHeight() * dm.density * 2;
+
+                    // 如果超出屏幕范围，则按比例缩小
+                    if (width > dm.widthPixels) {
+                        float radio = height / width;
+                        width = dm.widthPixels - 50;
+                        height = radio * width;
+                    }
+
+                    mURLDrawable.drawable = drawable;
+                    mURLDrawable.drawable.setBounds(0, 0, (int)width, (int)height);
+                    mURLDrawable.setBounds(0, 0, (int)width, (int)height);
+
+                    URLImageParser.this.mTextView.invalidate();
+                    URLImageParser.this.mTextView.setHeight((URLImageParser.this.mTextView.getHeight() + (int)height));
+                    URLImageParser.this.mTextView.setEllipsize(null);
+                }
+            }
         }
     }
 
     public class PostTask extends AsyncTask<Void, Void, List<PostAPI.Post>> {
-        private String mUsername;
-        private String mSession;
         private String mTid;
         private int mFrom;
         private int mTo;
 
         public PostTask(String tid, int from, int to) {
-            mUsername = SharedConfig.getInstance().getConfig(getApplicationContext(), "username");
-            mSession = SharedConfig.getInstance().getConfig(getApplicationContext(), "session");
             mTid = tid;
             mFrom = from;
             mTo = to;
         }
 
         @Override
+        protected void onPreExecute() {
+            mSwipeRefreshLayout.setEnabled(true);
+            mSwipeRefreshLayout.setRefreshing(true);
+        }
+
+        @Override
         protected List<PostAPI.Post> doInBackground(Void... params) {
-            return PostAPI.getInstance().post(mUsername, mSession, mTid, mFrom, mTo);
+            String username = SharedConfig.getInstance().getConfig("username");
+            String session = SharedConfig.getInstance().getConfig("session");
+            List<PostAPI.Post> result = PostAPI.getInstance().post(username, session, mTid, mFrom, mTo);
+            try {
+                // 请求成功但是没有数据，可能是session过期，获取新的session
+                if (result != null && result.size() == 0) {
+                    String password = SharedConfig.getInstance().getConfig("password");
+
+                    session = LoginAPI.getInstance().login(username, password);
+                    if (session == null) {
+                        return null;
+                    } else {
+                        // 重新请求数据
+                        SharedConfig.getInstance().setConfig("session", session);
+                        result = PostAPI.getInstance().post(username, session, mTid, mFrom, mTo);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("PostActivity", e.toString());
+            }
+            return result;
         }
 
         @Override
@@ -267,6 +310,9 @@ public class PostActivity extends ActionBarActivity {
                 mPostList.addAll(result);
                 mPostAdapter.notifyDataSetChanged();
             }
+
+            mSwipeRefreshLayout.setRefreshing(false);
+            mSwipeRefreshLayout.setEnabled(false);
         }
     }
 }
